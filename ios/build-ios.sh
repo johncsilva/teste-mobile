@@ -75,12 +75,14 @@ fi
 mkdir -p "$VENDOR_DIR" "$BUILD_ROOT"
 
 # === Baixa opencv-mobile iOS (device + simulator) ===
+# Ambos zips extraem "opencv2.framework/" na raiz, entao cada um vai em
+# sua propria pasta ($extract_dir) pra nao colidir.
 download_opencv() {
     local zip_name="$1"
     local extract_dir="$2"
     local zip_path="$VENDOR_DIR/$zip_name"
 
-    if [[ -d "$extract_dir" ]]; then
+    if [[ -d "$extract_dir/opencv2.framework" ]]; then
         return 0
     fi
 
@@ -88,7 +90,8 @@ download_opencv() {
     if [[ ! -f "$zip_path" ]]; then
         curl -L --fail -o "$zip_path" "$OPENCV_URL_BASE/$zip_name"
     fi
-    unzip -q "$zip_path" -d "$VENDOR_DIR"
+    mkdir -p "$extract_dir"
+    unzip -q -o "$zip_path" -d "$extract_dir"
     echo ">> Extraido em $extract_dir"
 }
 
@@ -139,7 +142,7 @@ build_platform() {
         -DENABLE_BITCODE=OFF \
         -DENABLE_ARC=OFF \
         -DENABLE_VISIBILITY=ON \
-        -DOpenCV_DIR="$opencv_dir/lib/cmake/opencv4" \
+        -DOPENCV_FRAMEWORK_DIR="$opencv_dir" \
         -DCMAKE_BUILD_TYPE=Release
 
     # Xcode generator usa multi-config; `--config Release` garante Release
@@ -201,9 +204,16 @@ echo ">> Montando libomr.xcframework"
 echo "=============================================="
 rm -rf "$XCF"
 
-XCF_ARGS=(-library "$DEVICE_LIB" -headers "$CPP_OMR_DIR")
+# Pasta dedicada so com omr.h — evita que xcodebuild copie android/,
+# benchmark/, CMakeLists.txt etc. para dentro do xcframework.
+HEADERS_DIR="$BUILD_ROOT/headers"
+rm -rf "$HEADERS_DIR"
+mkdir -p "$HEADERS_DIR"
+cp "$CPP_OMR_DIR/omr.h" "$HEADERS_DIR/"
+
+XCF_ARGS=(-library "$DEVICE_LIB" -headers "$HEADERS_DIR")
 if [[ -f "$SIM_FAT_DIR/libomr.a" ]]; then
-    XCF_ARGS+=(-library "$SIM_FAT_DIR/libomr.a" -headers "$CPP_OMR_DIR")
+    XCF_ARGS+=(-library "$SIM_FAT_DIR/libomr.a" -headers "$HEADERS_DIR")
 fi
 XCF_ARGS+=(-output "$XCF")
 
