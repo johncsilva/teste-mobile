@@ -20,7 +20,7 @@ schema em `CONTRACT.md`) e não contém lógica de negócio.
 | Desktop Linux | OK | 100% (190/190 sintéticos, 210/210 perturbados) | ~130 ms | OpenCV sistema |
 | Android arm64-v8a | OK | 100% (120/120 em 4 folhas reais) | 221 ms | APK 10.4 MB, libomr.so 5.1 MB stripped |
 | Android armeabi-v7a | — | — | — | Opcional (devices antigos 32-bit) |
-| iOS arm64 | Em construção | — | — | `ios/build-ios.sh` + CI macos-latest; xcframework em validação |
+| iOS arm64 | OK | — | — | xcframework 796 KB (libomr 262 KB/slice); opencv2.framework separado |
 
 Benchmark formal Android (N=120, 32 runs × 4 sheets, 2 warmup descartados):
 p50=221 ms, p95=249 ms, p99=251 ms, RAM peak 28-29 MB.
@@ -84,10 +84,17 @@ Compilar:
     cd ios
     ./build-ios.sh
 
-Gera `build-ios/libomr.xcframework/` com três slices:
+Gera `build-ios/libomr.xcframework/` com dois slices:
 
-- `ios-arm64/libomr.a` — iPhone/iPad físico
-- `ios-arm64_x86_64-simulator/libomr.a` — Simulator (fat: arm64 + x86_64)
+- `ios-arm64/libomr.a` (262 KB) — iPhone/iPad físico
+- `ios-arm64_x86_64-simulator/libomr.a` (fat arm64 + x86_64) — Simulator
+
+Tamanho total do xcframework: ~796 KB.
+
+> **Nota de integração:** o xcframework contém apenas `libomr.a` (nosso
+> código). `opencv2.framework` é dependência separada — o app consumidor
+> precisa adicioná-la também. Diferente do Android, onde OpenCV vem
+> embedado dentro de `libomr.so`.
 
 Primeira execução baixa `opencv-mobile-4.13.0-ios.zip`,
 `opencv-mobile-4.13.0-ios-simulator.zip` e clona
