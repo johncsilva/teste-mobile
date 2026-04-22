@@ -26,20 +26,20 @@ jobs:
       - name: Build
         run: cmake --build build -j
 
-      - name: Smoke test — omr_cli em folha sintetica
-        run: |
-          ./build/omr_cli \
-            benchmark/inputs/30q-5alt-2col-med/sheet-marked.png \
-            benchmark/inputs/30q-5alt-2col-med/template.json > out.json
-          cat out.json | python3 -m json.tool
-          python3 -c "import json,sys; d=json.load(open('out.json')); assert d['status']=='ok', d; assert len(d['questions'])==30"
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Benchmark — 100% em sinteticos
+      - name: Benchmark — 100% em sinteticos (7 variantes)
+        # O adapter Python traduz templates v0 (OMRChecker) para v1 (motor C++)
+        # no voo e cobre todas as 7 variantes. Substitui smoke test direto do
+        # binario, que falharia porque o repo so versiona templates v0.
         run: |
           cd benchmark
           python3 run_validation.py --detector cpp-omr --subset synthetic
+
+      - name: Benchmark — perturbados (rotacao + ruido + perspectiva)
+        run: |
+          cd benchmark
+          python3 run_validation.py --detector cpp-omr --subset perturbed
