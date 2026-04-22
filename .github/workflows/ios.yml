@@ -1,0 +1,81 @@
+name: iOS xcframework
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-xcframework:
+    # macos-latest usa Apple Silicon (arm64) e e gratuito para repos
+    # publicos. Runner privado cobraria ~$0.08/min.
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Xcode + CMake ja vem preinstalados nos runners macos-latest; so
+      # validamos versoes pra log (ajuda diagnostico quando GH atualiza
+      # o image baseline e quebra o build).
+      - name: Versoes de toolchain
+        run: |
+          sw_vers
+          xcodebuild -version
+          cmake --version
+
+      - name: Cache opencv-mobile iOS + ios-cmake
+        uses: actions/cache@v4
+        with:
+          path: ios/vendor
+          # Chave composta: versao opencv-mobile + tag ios-cmake.
+          # Bumping qualquer um dos dois invalida cache automaticamente.
+          key: ios-vendor-opencv-4.13.0-ios-cmake-4.5.0
+
+      - name: Build libomr.xcframework
+        run: |
+          cd ios
+          ./build-ios.sh
+
+      - name: Verificar slices e tamanho do xcframework
+        run: |
+          XCF=build-ios/libomr.xcframework
+          if [ ! -d "$XCF" ]; then
+            echo "::error::xcframework nao foi gerado em $XCF"
+            exit 1
+          fi
+
+          echo "Estrutura:"
+          find "$XCF" -maxdepth 2 -type d
+
+          # Slices obrigatorios: arm64 device + simulator (arm64 ou fat)
+          if [ ! -f "$XCF/ios-arm64/libomr.a" ]; then
+            echo "::error::slice ios-arm64 (device) ausente"
+            exit 1
+          fi
+
+          SIM_SLICE=$(find "$XCF" -maxdepth 1 -name 'ios-*-simulator' -type d | head -n1)
+          if [ -z "$SIM_SLICE" ] || [ ! -f "$SIM_SLICE/libomr.a" ]; then
+            echo "::error::slice simulator ausente"
+            exit 1
+          fi
+
+          echo "Device lib:"
+          lipo -info "$XCF/ios-arm64/libomr.a"
+          echo "Simulator lib:"
+          lipo -info "$SIM_SLICE/libomr.a"
+
+          # Threshold: 25 MB conforme plano-fase-6 (IPA <25MB target).
+          SIZE_KB=$(du -sk "$XCF" | awk '{print $1}')
+          echo "libomr.xcframework = ${SIZE_KB} KB"
+          if [ "$SIZE_KB" -gt 25600 ]; then
+            echo "::warning::xcframework cresceu para ${SIZE_KB} KB (threshold 25600)"
+          fi
+
+      - name: Upload libomr.xcframework
+        uses: actions/upload-artifact@v4
+        with:
+          name: libomr-xcframework
+          path: build-ios/libomr.xcframework
+          retention-days: 14

@@ -24,6 +24,7 @@ android/demo-app/.cxx/
 android/demo-app/gradle/wrapper/gradle-wrapper.jar.*
 
 # --- iOS ---
+ios/vendor/
 ios/build/
 ios/DerivedData/
 ios/Pods/

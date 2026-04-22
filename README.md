@@ -2,6 +2,7 @@
 
 [![CI (Linux)](https://github.com/johncsilva/teste-mobile/actions/workflows/ci.yml/badge.svg)](https://github.com/johncsilva/teste-mobile/actions/workflows/ci.yml)
 [![Android cross-compile](https://github.com/johncsilva/teste-mobile/actions/workflows/android.yml/badge.svg)](https://github.com/johncsilva/teste-mobile/actions/workflows/android.yml)
+[![iOS xcframework](https://github.com/johncsilva/teste-mobile/actions/workflows/ios.yml/badge.svg)](https://github.com/johncsilva/teste-mobile/actions/workflows/ios.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 Motor portátil de leitura de marcações ópticas (OMR — Optical Mark
@@ -19,7 +20,7 @@ schema em `CONTRACT.md`) e não contém lógica de negócio.
 | Desktop Linux | OK | 100% (190/190 sintéticos, 210/210 perturbados) | ~130 ms | OpenCV sistema |
 | Android arm64-v8a | OK | 100% (120/120 em 4 folhas reais) | 221 ms | APK 10.4 MB, libomr.so 5.1 MB stripped |
 | Android armeabi-v7a | — | — | — | Opcional (devices antigos 32-bit) |
-| iOS arm64 | Em construção | — | — | opencv-mobile 4.13.0 ios disponível, build em `ios/` pendente |
+| iOS arm64 | Em construção | — | — | `ios/build-ios.sh` + CI macos-latest; xcframework em validação |
 
 Benchmark formal Android (N=120, 32 runs × 4 sheets, 2 warmup descartados):
 p50=221 ms, p95=249 ms, p99=251 ms, RAM peak 28-29 MB.
@@ -74,13 +75,29 @@ Integração via JNI: ver `android/jni/OmrJni.cpp` e o app de exemplo em
 
 ## Build iOS
 
-Em construção. Requer macOS com Xcode e Command Line Tools. Plano:
-cross-compilar `libomr.a` para arm64-device + arm64-simulator +
-x86_64-simulator, consolidar em `libomr.xcframework` via
-`xcodebuild -create-xcframework`.
+Pré-requisitos (macOS obrigatório):
+- Xcode + Command Line Tools (`xcrun`, `xcodebuild`, `lipo`)
+- CMake
 
-opencv-mobile 4.13.0 para iOS foi verificado compatível (mesmos módulos do
-Android, `imread/imwrite` presentes, usa GCD em vez de OpenMP).
+Compilar:
+
+    cd ios
+    ./build-ios.sh
+
+Gera `build-ios/libomr.xcframework/` com três slices:
+
+- `ios-arm64/libomr.a` — iPhone/iPad físico
+- `ios-arm64_x86_64-simulator/libomr.a` — Simulator (fat: arm64 + x86_64)
+
+Primeira execução baixa `opencv-mobile-4.13.0-ios.zip`,
+`opencv-mobile-4.13.0-ios-simulator.zip` e clona
+`leetal/ios-cmake` em `ios/vendor/` (cacheado, gitignored).
+
+opencv-mobile iOS usa GCD em vez de OpenMP — não precisa de `libomp.a`
+custom como no Android.
+
+CI valida builds a cada push em `macos-latest` (gratuito em repo público).
+O artefato `libomr-xcframework` fica disponível por 14 dias em cada run.
 
 ## Benchmark
 

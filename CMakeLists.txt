@@ -19,8 +19,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(nlohmann_json)
 
-# biblioteca compartilhada (futuro FFI)
-add_library(omr SHARED omr.cpp)
+# Biblioteca do motor.
+# - Android/desktop: SHARED (libomr.so) — futuro FFI, consumido pelo demo-app
+# - iOS: STATIC (libomr.a) — convencao xcframework, linkado no .app bundle
+if(IOS)
+    add_library(omr STATIC omr.cpp)
+else()
+    add_library(omr SHARED omr.cpp)
+endif()
 target_include_directories(omr PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(omr PRIVATE ${OpenCV_LIBS} nlohmann_json::nlohmann_json)
 
