@@ -1,5 +1,9 @@
 # teste-mobile
 
+[![CI (Linux)](https://github.com/johncsilva/teste-mobile/actions/workflows/ci.yml/badge.svg)](https://github.com/johncsilva/teste-mobile/actions/workflows/ci.yml)
+[![Android cross-compile](https://github.com/johncsilva/teste-mobile/actions/workflows/android.yml/badge.svg)](https://github.com/johncsilva/teste-mobile/actions/workflows/android.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Motor portátil de leitura de marcações ópticas (OMR — Optical Mark
 Recognition) em C++/OpenCV, compilável para desktop Linux, Android (arm64) e
 iOS (arm64). Inclui harness Python de benchmark reproduzível.

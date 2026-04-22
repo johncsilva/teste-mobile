@@ -1,0 +1,45 @@
+name: CI (Linux)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OpenCV + build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libopencv-dev cmake build-essential
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Smoke test — omr_cli em folha sintetica
+        run: |
+          ./build/omr_cli \
+            benchmark/inputs/30q-5alt-2col-med/sheet-marked.png \
+            benchmark/inputs/30q-5alt-2col-med/template.json > out.json
+          cat out.json | python3 -m json.tool
+          python3 -c "import json,sys; d=json.load(open('out.json')); assert d['status']=='ok', d; assert len(d['questions'])==30"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Benchmark — 100% em sinteticos
+        run: |
+          cd benchmark
+          python3 run_validation.py --detector cpp-omr --subset synthetic
