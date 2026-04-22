@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "id": "01-celular-lampada",
+  "page_dimensions": [1654, 2339],
+  "bubble_dimensions": [31, 31],
+  "fiducials": {
+    "type": "corner_squares",
+    "size_px": 39,
+    "positions": [
+      [138, 138],
+      [1516, 138],
+      [138, 2201],
+      [1516, 2201]
+    ]
+  },
+  "blocks": [
+    {
+      "type": "mcq",
+      "alternatives": ["A", "B", "C", "D", "E"],
+      "origin": [276, 445],
+      "bubble_gap": 51,
+      "label_gap": 47,
+      "questions": { "start": 1, "end": 15 }
+    },
+    {
+      "type": "mcq",
+      "alternatives": ["A", "B", "C", "D", "E"],
+      "origin": [906, 445],
+      "bubble_gap": 51,
+      "label_gap": 47,
+      "questions": { "start": 16, "end": 30 }
+    }
+  ],
+  "thresholds": { "low": 0.25, "high": 0.60 }
+}

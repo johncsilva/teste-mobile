@@ -1,0 +1,48 @@
+{
+  "pageDimensions": [
+    1654,
+    2339
+  ],
+  "bubbleDimensions": [
+    31,
+    31
+  ],
+  "fieldBlocks": {
+    "MCQ_Col1": {
+      "fieldType": "QTYPE_MCQ5",
+      "origin": [
+        260,
+        429
+      ],
+      "fieldLabels": [
+        "q1..17"
+      ],
+      "bubblesGap": 51,
+      "labelsGap": 47
+    },
+    "MCQ_Col2": {
+      "fieldType": "QTYPE_MCQ5",
+      "origin": [
+        680,
+        429
+      ],
+      "fieldLabels": [
+        "q18..34"
+      ],
+      "bubblesGap": 51,
+      "labelsGap": 47
+    },
+    "MCQ_Col3": {
+      "fieldType": "QTYPE_MCQ5",
+      "origin": [
+        1100,
+        429
+      ],
+      "fieldLabels": [
+        "q35..50"
+      ],
+      "bubblesGap": 51,
+      "labelsGap": 47
+    }
+  }
+}

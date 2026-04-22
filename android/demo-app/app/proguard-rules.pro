@@ -1,0 +1,1 @@
+-keep class br.com.testemobile.omr.OmrNative { *; }

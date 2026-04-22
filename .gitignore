@@ -1,0 +1,66 @@
+# --- Build artifacts ---
+build/
+build-*/
+*.o
+*.so
+*.dylib
+
+# --- CMake ---
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+Makefile
+
+# --- Android ---
+android/vendor/
+android/demo-app/.gradle/
+android/demo-app/.gradle-bootstrap/
+android/demo-app/build/
+android/demo-app/app/build/
+android/demo-app/app/src/main/jniLibs/
+android/demo-app/local.properties
+android/demo-app/.cxx/
+android/demo-app/gradle/wrapper/gradle-wrapper.jar.*
+
+# --- iOS ---
+ios/build/
+ios/DerivedData/
+ios/Pods/
+ios/.build/
+*.xcframework
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# --- Benchmark outputs ---
+benchmark/outputs/
+benchmark/OMRChecker/
+benchmark/inputs/real/
+
+# --- IDE ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Logs / temp ---
+*.log
+*.tmp
+/tmp/
+
+# --- Session state (se alguém clonar e rodar Claude Code) ---
+.claude/

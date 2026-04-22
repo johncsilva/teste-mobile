@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OMR Demo</string>
+    <string name="image_path_label">Caminho absoluto da imagem:</string>
+    <string name="default_image_path">/data/local/tmp/sheet.jpg</string>
+    <string name="detect_button">Detect</string>
+    <string name="status_ready">Pronto</string>
+    <string name="status_running">Processando…</string>
+</resources>
