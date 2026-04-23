@@ -63,10 +63,22 @@ const char* omr_version(void);
   "metadata": {
     "processing_ms": 420,
     "template_id": "edu-30q-5alt-2col-med",
-    "markers_detected": 4
+    "markers_detected": 4,
+    "fiducials": [[285.4, 290.7], [3115.2, 287.1], [280.9, 4636.8], [3120.5, 4632.4]],
+    "image_size": [4160, 3120]
   }
 }
 ```
+
+### Campos de metadata
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `processing_ms` | int | Tempo total do pipeline em milissegundos |
+| `template_id` | string | Valor de `id` do template |
+| `markers_detected` | int | Quantos dos 4 fiduciais foram localizados (0..4) |
+| `fiducials` | `[[x,y], [x,y], [x,y], [x,y]]` ou `null` | Coordenadas dos 4 marcadores detectados no **espaço da imagem de entrada** (mesma resolução da foto passada em `image_path`). Ordem idêntica à do template (`positions[0..3]`). Se um marcador não foi detectado, seu slot é `null`. Campo é `null` quando o template não declara `fiducials`. Útil para overlay de auditoria e homografia no cliente. |
+| `image_size` | `[width, height]` | Dimensões da imagem de entrada em pixels. Pareado com `fiducials` para o cliente converter coordenadas se exibir em resolução diferente. |
 
 ### Formato do `json_result` (erro estrutural)
 
@@ -162,6 +174,8 @@ Não faz parte do contrato — referência para quem for implementar:
 2. resize_to(page_dimensions)                            # ~20 ms
 3. detect_fiducials(fiducials.positions, size_px)        # ~50 ms
    - se <4 encontrados → OMR_ERR_MARKERS_NOT_FOUND
+     (retorno de erro inclui `metadata.fiducials` parciais + `image_size` +
+      `markers_detected` para app mostrar overlay de diagnostico)
 4. warpPerspective para alinhar markers com positions    # ~30 ms
 5. threshold global (Otsu ou fixo)                       # ~10 ms
 6. for each block in blocks:

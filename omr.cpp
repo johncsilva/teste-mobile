@@ -223,6 +223,20 @@ OmrResult* make_error(OmrStatus status, const std::string& code, const std::stri
     return make_result(status, j.dump(), message);
 }
 
+// Variante com metadata extra (fiduciais parciais, image_size, etc.) — permite
+// que o cliente exiba overlay de auditoria mesmo em caso de falha de deteccao
+// parcial (ex.: 2/4 marcadores achados em MARKERS_NOT_FOUND).
+OmrResult* make_error(OmrStatus status, const std::string& code, const std::string& message,
+                     long elapsed_ms, json extra_metadata) {
+    json j;
+    j["status"] = "error";
+    j["error_code"] = code;
+    j["error_message"] = message;
+    extra_metadata["processing_ms"] = elapsed_ms;
+    j["metadata"] = extra_metadata;
+    return make_result(status, j.dump(), message);
+}
+
 }  // namespace
 
 extern "C" {
@@ -264,22 +278,56 @@ OmrResult* omr_detect(const char* image_path, const char* template_json) {
     // Fase 4.2: alinhamento via fiduciais (se o template tiver 4 posicoes).
     // Sem fiduciais (modo sinteticos): pula alinhamento, assume imagem ja alinhada.
     int markers_detected = 0;
+    // Coordenadas dos 4 marcadores detectados, convertidas ao espaco da imagem
+    // de entrada (foto original do celular). Exposto no metadata para o app
+    // poder desenhar overlay de auditoria sobre a foto capturada.
+    json fiducials_json = nullptr;
     if (tmpl.fiducials.size() == 4 && tmpl.fiducial_size > 0) {
+        // Template malformado (page_dimensions zeradas) causaria divisao por zero
+        // na conversao de escala abaixo. Aborta cedo com erro claro.
+        if (tmpl.page_w <= 0 || tmpl.page_h <= 0) {
+            double freq = cv::getTickFrequency();
+            long elapsed = static_cast<long>(1000.0 * (cv::getTickCount() - t0) / freq);
+            return make_error(OMR_ERR_TEMPLATE_INVALID, "TEMPLATE_INVALID",
+                              "page_dimensions invalidas no template (precisa > 0)", elapsed);
+        }
         auto detected = detect_fiducials(gray, tmpl.fiducials, tmpl.fiducial_size);
+        // detect_fiducials roda no espaco redimensionado (page_w x page_h).
+        // Convertemos para o espaco original da foto para que o Flutter/RN
+        // possa desenhar direto sobre a imagem que capturou.
+        const double scale_x = static_cast<double>(img.cols) / tmpl.page_w;
+        const double scale_y = static_cast<double>(img.rows) / tmpl.page_h;
+        json f_arr = json::array();
         std::vector<cv::Point2f> src, dst;
         for (size_t i = 0; i < detected.size(); ++i) {
             if (detected[i].x >= 0 && detected[i].y >= 0) {
                 src.push_back(detected[i]);
                 dst.push_back(tmpl.fiducials[i]);
                 ++markers_detected;
+                f_arr.push_back({
+                    detected[i].x * scale_x,
+                    detected[i].y * scale_y
+                });
+            } else {
+                f_arr.push_back(nullptr);
             }
         }
+        fiducials_json = f_arr;
         if (markers_detected < 4) {
             double freq = cv::getTickFrequency();
             long elapsed = static_cast<long>(1000.0 * (cv::getTickCount() - t0) / freq);
+            // Expoe fiduciais parciais + image_size no metadata para o cliente
+            // poder renderizar overlay de diagnostico mostrando *quais* marcadores
+            // faltaram (alguns detectados, outros nulos).
+            json meta = {
+                {"template_id", tmpl.id},
+                {"image_size", {img.cols, img.rows}},
+                {"fiducials", fiducials_json},
+                {"markers_detected", markers_detected}
+            };
             return make_error(OMR_ERR_MARKERS_NOT_FOUND, "MARKERS_NOT_FOUND",
                               std::to_string(markers_detected) + " de 4 marcadores detectados. "
-                              "Recapturar com folha plana e bem iluminada.", elapsed);
+                              "Recapturar com folha plana e bem iluminada.", elapsed, meta);
         }
         // getPerspectiveTransform (imgproc) resolve sistema linear exato para 4
         // pontos — equivalente a findHomography sem RANSAC. Escolhido no lugar
@@ -373,7 +421,9 @@ OmrResult* omr_detect(const char* image_path, const char* template_json) {
     j["metadata"] = {
         {"processing_ms", elapsed_ms},
         {"template_id", tmpl.id},
-        {"markers_detected", markers_detected}
+        {"markers_detected", markers_detected},
+        {"fiducials", fiducials_json},
+        {"image_size", {img.cols, img.rows}}
     };
         return make_result(OMR_OK, j.dump(), "");
     } catch (const std::bad_alloc&) {
@@ -407,7 +457,7 @@ void omr_free(OmrResult* result) {
 }
 
 const char* omr_version(void) {
-    return "cpp-omr 0.1.0 (fase-4, sem fiduciais)";
+    return "cpp-omr 0.2.0 (fase-6, fiducials em metadata)";
 }
 
 }
